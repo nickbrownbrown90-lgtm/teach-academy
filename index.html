@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Teach Me Academy</title>
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#090d16">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Teach Academy">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #090d16;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #f9fafb;
+    }
+
+    #app-frame {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      border: none;
+      outline: none;
+      z-index: 10;
+      background-color: #090d16;
+    }
+
+    /* Splash Screen while GAS spins up */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #090d16;
+      z-index: 20;
+      transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+    }
+
+    .splash-icon-wrapper {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .splash-glow {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.4) 0%, rgba(168, 85, 247, 0.2) 60%, transparent 80%);
+      animation: pulse-glow 2.5s infinite ease-in-out;
+    }
+
+    .splash-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      z-index: 2;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+    }
+
+    .splash-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #38bdf8, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .splash-sub {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 24px;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(56, 189, 248, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(0.95); opacity: 0.5; }
+      50% { transform: scale(1.15); opacity: 0.85; }
+    }
+
+    .fade-out {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none;
+    }
+
+    /* Offline Toast */
+    #offline-banner {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ef4444;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Splash Screen -->
+  <div id="splash-screen">
+    <div class="splash-icon-wrapper">
+      <div class="splash-glow"></div>
+      <img src="icons/icon-192.png" alt="Teach Me Academy" class="splash-icon">
+    </div>
+    <div class="splash-title">Teach Me Academy</div>
+    <div class="splash-sub">Cloud Learning Command Center</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Full-Screen Apps Script Frame -->
+  <iframe
+    id="app-frame"
+    allow="clipboard-write; fullscreen; web-share"
+    loading="eager"
+    title="Teach Me Academy Cloud Hub">
+  </iframe>
+
+  <div id="offline-banner">⚠️ Offline: Check your connection</div>
+
+  <script>
+    // 1. Google Apps Script Live Web App Target
+    const BASE_GAS_URL = 'https://script.google.com/macros/s/AKfycbxeT-nqoYoQeLu9tiTwmmOA7chQDnQSVQkBrFDgA7RKpnWJK2cpcGNCmUwOQKNZaQPB/exec';
+
+    // 2. Propagate Query Parameters (e.g. ?track=...&lesson=...)
+    const currentParams = window.location.search;
+    const targetUrl = currentParams ? (BASE_GAS_URL + currentParams) : BASE_GAS_URL;
+
+    const frame = document.getElementById('app-frame');
+    const splash = document.getElementById('splash-screen');
+    const offlineBanner = document.getElementById('offline-banner');
+
+    frame.src = targetUrl;
+
+    // 3. Smooth Splash Dismissal once Frame is Loaded
+    frame.addEventListener('load', () => {
+      // Small timeout ensures styles are computed inside the iframe
+      setTimeout(() => {
+        splash.classList.add('fade-out');
+      }, 300);
+    });
+
+    // Fallback splash dismissal in case load event was caught early
+    setTimeout(() => {
+      splash.classList.add('fade-out');
+    }, 4000);
+
+    // 4. Online/Offline Status Listeners
+    window.addEventListener('offline', () => { offlineBanner.style.display = 'block'; });
+    window.addEventListener('online', () => { offlineBanner.style.display = 'none'; });
+
+    // 5. Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('Teach Me Academy PWA Service Worker active:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('PWA Service Worker registration skipped:', err);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
